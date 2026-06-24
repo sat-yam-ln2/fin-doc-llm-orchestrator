@@ -43,3 +43,15 @@ class RiskSummary(BaseModel):
     risk_level: str  # low, medium, high
     key_findings: List[str]
     recommended_action: str
+
+class ToneAnalysis(BaseModel):
+    urgency_score: int          # 0 to 10
+    evasiveness_score: int      # 0 to 10
+    tone_summary: str           # one line explanation
+    combined_risk_signal: str   # low, medium, high
+
+class VerificationResult(BaseModel):
+    status: str           # verified, partially_verified, unverified
+    confidence: int        # 0 to 100
+    reason: str            # one line explanation
+    flagged_fields: List[str]   # which fields look suspicious, empty if none

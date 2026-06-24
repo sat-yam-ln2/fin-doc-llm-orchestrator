@@ -35,6 +35,13 @@ def run_pipeline(raw_text: str) -> dict:
     logs["extraction"] = extraction
     print(f"[EXTRACT] tokens={extraction['input_tokens']} | latency={extraction['latency_seconds']}s")
 
+    # Step 2b: Verify extraction with LLM-as-a-judge
+    from verifier import verify_extraction
+    verification_result = verify_extraction(raw_text, extracted.model_dump_json())
+    verification = verification_result["verification"]
+    logs["verification"] = verification_result
+    print(f"[VERIFY] status={verification.status} | confidence={verification.confidence}% | flagged={verification.flagged_fields}")
+
     # Step 3: Anomaly detection (no LLM)
     anomalies = detect_anomalies(doc_type, extracted)
     logs["anomalies"] = anomalies
@@ -53,16 +60,24 @@ def run_pipeline(raw_text: str) -> dict:
     summary = summarize_risk(doc_type, extracted_str)
     logs["summary"] = summary
     print(f"[SUMMARIZE] risk_level={summary['summary'].risk_level} | latency={summary['latency_seconds']}s")
+    # Step 7: Tone and sentiment analysis (independent of doc_type)
+    from sentiment_analyzer import analyze_tone
+    tone_result = analyze_tone(raw_text)
+    tone = tone_result["tone"]
+    logs["tone"] = tone_result
+    print(f"[TONE] urgency={tone.urgency_score} | evasiveness={tone.evasiveness_score} | combined={tone.combined_risk_signal}")
 
     return {
-        "doc_id": doc_id,
-        "doc_type": doc_type,
-        "confidence": confidence,
-        "extracted": extracted.model_dump(),
-        "anomalies": anomalies,
-        "risk_summary": summary["summary"].model_dump(),
-        "logs": logs
-    }
+            "doc_id": doc_id,
+            "doc_type": doc_type,
+            "confidence": confidence,
+            "extracted": extracted.model_dump(),
+            "anomalies": anomalies,
+            "risk_summary": summary["summary"].model_dump(),
+            "tone": tone.model_dump(),
+            "verification": verification.model_dump(),
+            "logs": logs
+        }
 
 
 def run_pipeline_from_pdf(file_path: str) -> dict:
